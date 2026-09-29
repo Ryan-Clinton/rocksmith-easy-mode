@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rocksmith-easy"
+version = "1.0.0"
+description = "Beginner-friendly tweaks for Rocksmith 2014: gentler Guitarcade minigames and a sane Realtone cable input level."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["rocksmith", "guitarcade", "psarc", "guitar", "bass", "accessibility"]
+dependencies = ["cryptography>=3.0"]
+
+[project.urls]
+Homepage = "https://github.com/Ryan-Clinton/rocksmith-easy"
+
+[project.scripts]
+rocksmith-easy = "rseasy.cli:main"
+
+[project.gui-scripts]
+rocksmith-easy-gui = "rseasy.cli:main"
+
+[tool.setuptools]
+packages = ["rseasy"]

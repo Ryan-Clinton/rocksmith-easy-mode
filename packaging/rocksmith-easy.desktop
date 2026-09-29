@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Rocksmith Easy Mode
+Comment=Gentler Guitarcade minigames and a sane Realtone cable level
+Exec=rocksmith-easy gui
+Icon=audio-input-microphone
+Terminal=false
+Categories=Game;Utility;

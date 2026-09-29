@@ -1,0 +1,2 @@
+# The only third-party dependency: the psarc table of contents is AES-256-CFB.
+cryptography>=3.0
