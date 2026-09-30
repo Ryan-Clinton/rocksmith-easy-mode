@@ -137,7 +137,7 @@ class KnobRow:
     def _moved(self, _v):
         if self._busy:
             return
-        self.refresh()
+        self.set(self.var.get())        # snap the thumb to the knob's step
         if self.on_change:
             self.on_change()
 

@@ -34,7 +34,10 @@ class Knob:
     explain: Optional[Callable[[float], str]] = None
 
     def coerce(self, v):
+        """Clamp to range and snap to the step, so a dragged slider reads
+        5.5 rather than 5.4729361."""
         v = float(v)
+        v = self.lo + round((v - self.lo) / self.step) * self.step
         v = max(self.lo, min(self.hi, v))
         return int(round(v)) if self.integer else round(v, 4)
 
@@ -127,7 +130,7 @@ class Saloon(Game):
              "how the game looks or moves.",
              stock=1.0, default=5.0, lo=1.0, hi=15.0, step=0.5,
              explain=lambda v: ("stock spacing" if v == 1 else
-                                "targets arrive 1/%s as often" % num(v))),
+                                "%sx the stock gap between targets" % num(v))),
         Knob("speed", "Target travel speed",
              "How much slower each target crosses the screen, i.e. reaction "
              "time per target. Raise this only if the targets themselves are "

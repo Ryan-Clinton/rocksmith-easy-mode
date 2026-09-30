@@ -68,6 +68,19 @@ class TestKnobs(unittest.TestCase):
         self.assertEqual(k.coerce(999), k.hi)
         self.assertEqual(k.coerce(-5), k.lo)
 
+    def test_dragged_values_snap_to_the_step(self):
+        """A mouse drag gives values like 1.3294572; nobody can read those."""
+        k = games.BY_SLUG["saloon"].knob("spawn")      # step 0.5
+        self.assertEqual(k.coerce(1.3294572347), 1.5)
+        self.assertEqual(k.hint(1.3294572347), "1.5x the stock gap between targets")
+        self.assertEqual(games.BY_SLUG["saloon"].knob("speed").coerce(2.13), 2.25)
+
+    def test_defaults_sit_on_the_step_grid(self):
+        for g in games.ALL:
+            for k in g.knobs:
+                self.assertEqual(k.coerce(k.default), k.default, k.key)
+                self.assertEqual(k.coerce(k.stock), k.stock, k.key)
+
     def test_integer_knobs_stay_integers(self):
         k = games.BY_SLUG["ducks"].knob("rainbow_every")
         self.assertIsInstance(k.coerce(2.6), int)
