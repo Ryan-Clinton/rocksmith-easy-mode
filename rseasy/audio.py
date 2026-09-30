@@ -40,21 +40,36 @@ class Preset:
 
 
 PRESETS = [
-    Preset("guitar_direct", "Guitar - straight into the cable", 100,
-           "Passive pickups want the full +10 dB boost."),
-    Preset("bass_direct", "Bass - straight into the cable", 32,
-           "An active bass needs a small cut, not a boost. 32% is -2.2 dB; "
-           "22% (-4.1 dB) read a shade low and 81% is what makes calibration "
-           "say it is too loud."),
+    Preset("guitar_passive", "Guitar - passive pickups", 100,
+           "Most guitars. Passive pickups are quiet and want the full +10 dB "
+           "boost."),
+    Preset("guitar_active", "Guitar - active pickups", 44,
+           "UNTESTED STARTING GUESS. Active pickups (EMG and similar) have a "
+           "battery-powered preamp and run much hotter, so this starts at "
+           "unity gain."),
+    Preset("bass_passive", "Bass - passive pickups", 44,
+           "UNTESTED STARTING GUESS. Hotter than a passive guitar, quieter "
+           "than an active bass, so this starts at unity gain."),
+    Preset("bass_active", "Bass - active pickups", 32,
+           "Needs a cut, not a boost. 32% is -2.2 dB, which calibrated on "
+           "Linux; 81% is what makes calibration say it is too loud."),
     Preset("guitar_loop", "Guitar - from the amp's effects loop", 35,
-           "UNTESTED STARTING GUESS. A send is line level, far hotter than "
-           "the cable's instrument input, so this starts low."),
+           "UNTESTED STARTING GUESS. A loop send is line level, far hotter "
+           "than any pickup, so this starts low."),
     Preset("bass_loop", "Bass - from the amp's effects loop", 30,
            "UNTESTED STARTING GUESS. If even 0% still reads too loud the "
            "cable cannot cut enough on its own - turn the amp's send down or "
            "use a -10 dB loop setting."),
 ]
+# Names used before passive/active were split out.
+RENAMED = {"guitar_direct": "guitar_passive", "bass_direct": "bass_active"}
 BY_KEY = {p.key: p for p in PRESETS}
+
+
+def preset_key(name):
+    """'bass-active' or an old name like 'bass-direct' -> 'bass_active'."""
+    key = name.replace("-", "_")
+    return RENAMED.get(key, key)
 
 
 def pct_to_step(pct):

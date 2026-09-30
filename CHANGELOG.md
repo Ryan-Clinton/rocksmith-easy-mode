@@ -16,6 +16,9 @@
   resets it to 17% at every launch, so the app holds the level while it is
   open, putting it back whenever it changes (`input --hold` on the command
   line).
+- Cable presets split by pickup type: guitar or bass with passive pickups,
+  active pickups, or from an amp's effects loop. Saved levels and old
+  command-line names (`bass-direct`, `guitar-direct`) carry over.
 - 7-Zip no longer flashes a console window when run from the Windows app.
 - Tests run on every push, on Windows and Linux, Python 3.8 to 3.13.
 

@@ -11,8 +11,8 @@ APP = "rocksmith-easy"
 # The shell scripts this app replaces kept the cable presets here.
 LEGACY_CONF = Path.home() / ".config" / "rocksmith-input.conf"
 LEGACY_KEYS = {
-    "GUITAR_DIRECT": "guitar_direct",
-    "BASS_DIRECT": "bass_direct",
+    "GUITAR_DIRECT": "guitar_passive",
+    "BASS_DIRECT": "bass_active",
     "GUITAR_LOOP": "guitar_loop",
     "BASS_LOOP": "bass_loop",
 }
@@ -84,8 +84,10 @@ def load():
         saved = (raw.get("guitarcade") or {}).get(g.slug)
         if isinstance(saved, dict):
             cfg["guitarcade"][g.slug] = g.clean(saved)
+    saved = {audio.preset_key(k): v
+             for k, v in (raw.get("input") or {}).items()}
     for p in audio.PRESETS:
-        v = (raw.get("input") or {}).get(p.key)
+        v = saved.get(p.key)
         if isinstance(v, (int, float)) and 0 <= v <= 100:
             cfg["input"][p.key] = int(round(v))
     return cfg

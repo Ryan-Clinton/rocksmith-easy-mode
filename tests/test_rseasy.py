@@ -216,7 +216,7 @@ class TestConfig(unittest.TestCase):
             real = config.LEGACY_CONF
             try:
                 config.LEGACY_CONF = legacy
-                self.assertEqual(config.defaults()["input"]["bass_direct"], 32)
+                self.assertEqual(config.defaults()["input"]["bass_active"], 32)
             finally:
                 config.LEGACY_CONF = real
 
@@ -231,6 +231,21 @@ class TestConfig(unittest.TestCase):
                                  games.BY_SLUG["saloon"].defaults())
             finally:
                 config.config_file = real
+
+    def test_old_preset_names_carry_over(self):
+        """guitar_direct/bass_direct became guitar_passive/bass_active."""
+        real = config.config_file
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "config.json"
+            f.write_text('{"input": {"guitar_direct": 90, "bass_direct": 12}}')
+            try:
+                config.config_file = lambda: f
+                cfg = config.load()
+            finally:
+                config.config_file = real
+        self.assertEqual(cfg["input"]["guitar_passive"], 90)
+        self.assertEqual(cfg["input"]["bass_active"], 12)
+        self.assertEqual(audio.preset_key("bass-direct"), "bass_active")
 
     def test_level_hold_is_on_by_default_and_remembered(self):
         self.assertIs(config.defaults()["hold"], True)

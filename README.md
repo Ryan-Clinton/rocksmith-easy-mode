@@ -92,8 +92,8 @@ rocksmith-easy info                              # what was found, what is patch
 rocksmith-easy guitarcade ducks --defaults       # apply the tuned defaults
 rocksmith-easy guitarcade ducks --wall 30 --speed 9
 rocksmith-easy guitarcade saloon --stock         # put the stock game back
-rocksmith-easy input bass-direct                 # set the cable for bass
-rocksmith-easy input --level 40 --save-as bass-direct
+rocksmith-easy input bass-active                 # set the cable for bass
+rocksmith-easy input --level 40 --save-as bass-active
 ```
 
 Settings are remembered in `~/.config/rocksmith-easy/config.json`
@@ -144,10 +144,16 @@ varies a lot from instrument to instrument.
 
 | | Level | Gain | |
 |---|---|---|---|
-| Guitar, straight in | 100% | +10.0 dB | passive pickups want the boost |
-| Bass, straight in | 32% | −2.2 dB | an active bass needs a cut |
+| Guitar, passive pickups | 100% | +10.0 dB | quiet pickups want the boost |
+| Guitar, active pickups | 44% | −0.2 dB | untested starting guess |
+| Bass, passive pickups | 44% | −0.2 dB | untested starting guess |
+| Bass, active pickups | 32% | −2.2 dB | needs a cut; calibrated on Linux |
 | Guitar, effects loop | 35% | −1.7 dB | untested starting guess |
 | Bass, effects loop | 30% | −2.6 dB | untested starting guess |
+
+The tested levels were found on Linux. On Windows an active bass was still
+too loud at −4.5 dB, so expect to go lower there, and press *Save current
+here* once calibration is happy.
 
 81% — a common suggestion online — is **+6.6 dB of boost**, and is exactly
 what makes calibration complain.
@@ -165,7 +171,7 @@ beforehand. So the app holds the level: leave it open while you play
 (minimised is fine), and it puts the level back within a second whenever
 something changes it. This is the same check-and-set that RSMods' *Override
 input volume* does, without needing RSMods installed. From the command line,
-`rocksmith-easy input bass-direct --hold` does the same until you press
+`rocksmith-easy input bass-active --hold` does the same until you press
 Ctrl+C.
 
 ## Compatibility

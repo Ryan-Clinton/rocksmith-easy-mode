@@ -112,7 +112,7 @@ def cmd_input(args, cfg):
         pct = max(0, min(100, args.level))
         label = "custom"
     else:
-        key = args.preset.replace("-", "_")
+        key = audio.preset_key(args.preset)
         if key not in audio.BY_KEY:
             sys.exit("unknown preset: %s" % args.preset)
         pct = presets[key]
@@ -152,7 +152,7 @@ def cmd_input(args, cfg):
                 holder.stop()
 
     if args.save_as:
-        key = args.save_as.replace("-", "_")
+        key = audio.preset_key(args.save_as)
         if key not in audio.BY_KEY:
             sys.exit("unknown preset: %s" % args.save_as)
         cfg["input"][key] = int(pct)
