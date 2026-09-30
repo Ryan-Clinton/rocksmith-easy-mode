@@ -232,6 +232,21 @@ class TestConfig(unittest.TestCase):
             finally:
                 config.config_file = real
 
+    def test_level_hold_is_on_by_default_and_remembered(self):
+        self.assertIs(config.defaults()["hold"], True)
+        self.assertIsNone(config.defaults()["hold_level"])
+        real = config.config_file
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "config.json"
+            f.write_text('{"hold": false, "hold_level": 10}')
+            try:
+                config.config_file = lambda: f
+                cfg = config.load()
+            finally:
+                config.config_file = real
+        self.assertIs(cfg["hold"], False)
+        self.assertEqual(cfg["hold_level"], 10)
+
 
 class TestGameRunning(unittest.TestCase):
     """Apply and restore must refuse, in plain words, while the game runs."""

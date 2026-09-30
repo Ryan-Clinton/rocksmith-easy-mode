@@ -355,8 +355,7 @@ class CablePanel(ttk.Frame):
         self.holder = None
         if self.backend.can_hold:
             self.holder = audio.LevelHolder(self.backend)
-            self.hold_var = tk.BooleanVar(
-                value=app.cfg.get("hold_level") is not None)
+            self.hold_var = tk.BooleanVar(value=app.cfg.get("hold", True))
             ttk.Checkbutton(
                 self, variable=self.hold_var, command=self.toggle_hold,
                 text="Keep this level while Rocksmith runs. The game resets "
@@ -365,7 +364,7 @@ class CablePanel(ttk.Frame):
                      "fine.").pack(fill="x", padx=PAD, pady=(0, 4))
             self.hold_label = ttk.Label(self, foreground=GREY)
             self.hold_label.pack(fill="x", padx=PAD + 20)
-            if app.cfg.get("hold_level") is not None:
+            if self.hold_var.get() and app.cfg.get("hold_level") is not None:
                 self.holder.hold(app.cfg["hold_level"])
             self._show_hold()
 
@@ -377,15 +376,16 @@ class CablePanel(ttk.Frame):
         self.refresh()
 
     def toggle_hold(self):
+        self.app.cfg["hold"] = self.hold_var.get()
         if self.hold_var.get():
-            pct = self.backend.get_percent()
+            pct = self.app.cfg.get("hold_level")
             if pct is None:
-                pct = int(round(self.custom.get()))
-            self._hold(pct)
+                pct = self.backend.get_percent()
+            if pct is not None:
+                self._hold(pct)
         else:
             self.holder.release()
-            self.app.cfg["hold_level"] = None
-            config.save(self.app.cfg)
+        config.save(self.app.cfg)
 
     def _hold(self, pct):
         self.holder.hold(pct)
