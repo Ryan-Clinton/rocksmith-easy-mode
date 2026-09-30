@@ -54,7 +54,10 @@ def cmd_guitarcade(args, cfg):
     game_dir = resolve_game_dir(cfg, args.game_dir)
 
     if args.stock:
-        patcher.restore(game, game_dir, log=print)
+        try:
+            patcher.restore(game, game_dir, log=print)
+        except (patcher.PatchError, OSError) as e:
+            sys.exit("\n%s" % e)
         return 0
 
     if args.defaults:

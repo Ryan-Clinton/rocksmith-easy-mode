@@ -18,7 +18,7 @@ python3 -m unittest tests.test_rseasy.TestKnobs.test_clamped_to_range -v   # sin
 
 There is no linter. `pip install .` installs the `rocksmith-easy` entry point (`rseasy.cli:main`).
 
-CI (`.github/workflows/tests.yml`) runs the tests on ubuntu-22.04 (the newest runner that still has 3.8) and Windows, Python 3.8–3.13. Pushing a `v*` tag runs `release.yml`, which uses PyInstaller (`--windowed --onedir`, entry `rocksmith-easy.pyw`) to build `RocksmithEasyMode.exe` and attaches the zip to a **draft** release. The frozen app has no console, so subprocesses must not rely on inherited stdio handles (see `sevenzip._QUIET`). Release steps are in CONTRIBUTING.md.
+CI (`.github/workflows/tests.yml`) runs the tests on ubuntu-22.04 (the newest runner that still has 3.8) and Windows, Python 3.8–3.13. Pushing a `v*` tag runs `release.yml`, which uses PyInstaller (`--windowed --onedir`, entry `rocksmith-easy.pyw`) to build `RocksmithEasyMode.exe` and attaches the zip to a **draft** release. The frozen app has no console, so subprocesses must not rely on inherited stdio handles (see `sevenzip.QUIET`). Release steps are in CONTRIBUTING.md.
 
 **Caution:** `TestLivePatch` runs automatically when a Rocksmith install and 7-Zip are found, and it patches the *real* game files (then restores the prior state in `tearDown`). Run the other test classes explicitly if you don't want that.
 
@@ -31,6 +31,7 @@ Everything lives in the `rseasy/` package. The data flow for a patch:
 - **`games.py` is the single source of truth for tunables.** Each minigame is a `Game` subclass with a list of `Knob`s (key, label, help, stock, default, lo, hi, step, integer, explain). The GUI builds its sliders and the CLI generates its `--flags` from these definitions, so adding a knob means adding it to `knobs` and handling it in that game's `apply()` — no UI code changes. Register new games in `games.ALL`.
 - **Edits must assert their site count.** Use `Game._sub` / `Game._set_prop` with the expected number of matches so a different game build fails loudly instead of half-patching. `Game.members` (166 Saloon, 209 Ducks) is asserted before repacking.
 - **Patches always rebuild from the `.psarc.orig` backup**, never from the live file, so repeated patches don't compound and `restore` is just a copy. `patcher.status()` returns `stock` / `patched` / `missing`.
+- **Windows locks the game's archives while Rocksmith runs**, so `apply`/`restore` refuse up front if `patcher.game_running()` (tasklist on Windows, `/proc` cmdline scan for Proton on Linux), and turn a `PermissionError` on the final swap into the same "close Rocksmith first" `PatchError`.
 - **The inner 7z must contain no directory entries** (they hang the game's loading screen) — `sevenzip.pack` takes an explicit member list; never add `.`.
 - **`audio.py`**: cable gain spans −8 to +10 dB over 38 steps (amixer 0..37), so unity ≈ 44%, not 50%. `AlsaBackend` drives `amixer`/`alsactl` on Linux; `ManualBackend` just reports the number elsewhere. Presets live in `audio.PRESETS`.
 - **`config.py`**: JSON at `~/.config/rocksmith-easy/config.json` (APPDATA on Windows), with one-time migration from the legacy `~/.config/rocksmith-input.conf`. `load()` must survive a corrupt file.

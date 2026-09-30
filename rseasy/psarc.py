@@ -142,7 +142,8 @@ def write_verified(path, names, payloads, manifest_md5):
         for i, want in enumerate(payloads):
             if extract(raw, h, i + 1) != want:
                 raise ValueError("payload mismatch: %s" % names[i])
+        # Windows refuses this while the game has the archive open.
+        os.replace(tmp, path)
     except Exception:
         os.unlink(tmp)
         raise
-    os.replace(tmp, path)

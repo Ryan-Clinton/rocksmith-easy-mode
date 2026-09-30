@@ -5,14 +5,48 @@ patched, and every later patch rebuilds from that backup. Re-running with
 different numbers therefore never compounds, and "restore" is just a copy.
 """
 import shutil
+import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 from . import paths, psarc, sevenzip
 
+EXE = "rocksmith2014.exe"
+CLOSE_FIRST = ("Rocksmith is running. Close it completely, then try again - "
+               "Windows won't let the game's files be changed while it has "
+               "them open.")
+
 
 class PatchError(RuntimeError):
     pass
+
+
+def game_running():
+    """True if Rocksmith 2014 is running, natively or under Wine/Proton."""
+    try:
+        if sys.platform == "win32":
+            out = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq Rocksmith2014.exe", "/NH"],
+                capture_output=True, text=True, **sevenzip.QUIET).stdout
+            return EXE in out.lower()
+        proc = Path("/proc")
+        if proc.is_dir():
+            for d in proc.iterdir():
+                if d.name.isdigit():
+                    try:
+                        if EXE.encode() in (d / "cmdline").read_bytes().lower():
+                            return True
+                    except OSError:
+                        pass
+    except OSError:
+        pass
+    return False
+
+
+def _require_closed():
+    if game_running():
+        raise PatchError(CLOSE_FIRST)
 
 
 def live_path(game, game_dir):
@@ -47,7 +81,11 @@ def apply(game, values, game_dir, log=None):
     if not live.is_file():
         raise PatchError("%s not found.\nLooked for: %s" % (game.psarc, live))
 
+    _require_closed()
     values = game.clean(values)
+    stale = Path(str(live) + ".new")
+    if stale.exists():
+        stale.unlink()
 
     if not orig.is_file():
         log("Saving a pristine backup of %s" % game.psarc)
@@ -86,7 +124,10 @@ def apply(game, values, game_dir, log=None):
         payloads[idx] = out_7z.read_bytes()
 
     log("Rebuilding and verifying %s" % game.psarc)
-    psarc.write_verified(live, names, payloads, manifest_md5)
+    try:
+        psarc.write_verified(live, names, payloads, manifest_md5)
+    except PermissionError:
+        raise PatchError(CLOSE_FIRST)
     log("Done")
     return summary
 
@@ -98,6 +139,10 @@ def restore(game, game_dir, log=None):
     if not orig.is_file():
         log("No backup for %s - it was never patched" % game.psarc)
         return False
-    shutil.copy2(orig, live)
+    _require_closed()
+    try:
+        shutil.copy2(orig, live)
+    except PermissionError:
+        raise PatchError(CLOSE_FIRST)
     log("Restored stock %s" % game.psarc)
     return True

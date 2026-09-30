@@ -288,7 +288,7 @@ class GamePanel(ttk.Frame):
         try:
             if not patcher.restore(self.game, d, log=self.say):
                 self.say("Nothing to undo - this game was never patched.")
-        except OSError as e:
+        except (OSError, patcher.PatchError) as e:
             messagebox.showerror("Could not restore", str(e), parent=self)
         self.refresh_status()
 

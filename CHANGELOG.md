@@ -4,6 +4,9 @@
 
 - Windows build: a ready-to-run `RocksmithEasyMode.exe`, built by GitHub
   Actions and attached to each release.
+- Apply and Restore now say "close Rocksmith first" when the game is
+  running, instead of failing with "Access is denied" on Windows. A failed
+  swap no longer leaves a `.psarc.new` file behind.
 - 7-Zip no longer flashes a console window when run from the Windows app.
 - Tests run on every push, on Windows and Linux, Python 3.8 to 3.13.
 

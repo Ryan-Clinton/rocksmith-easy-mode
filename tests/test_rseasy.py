@@ -37,6 +37,23 @@ class TestPsarc(unittest.TestCase):
             psarc.write_verified(p, names, payloads, bytes(16))
             self.assertEqual(psarc.read_all(p)[1], payloads)
 
+    def test_failed_swap_leaves_no_new_file(self):
+        """Windows locks the archive while the game runs; the swap then
+        fails, and the rebuilt copy must not be left lying around."""
+        real = os.replace
+
+        def locked(src, dst):
+            raise PermissionError(5, "Access is denied")
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "t.psarc"
+            try:
+                os.replace = locked
+                with self.assertRaises(PermissionError):
+                    psarc.write_verified(p, ["a"], [b"x"], bytes(16))
+            finally:
+                os.replace = real
+            self.assertEqual(list(Path(td).iterdir()), [])
+
     def test_rejects_non_psarc(self):
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "nope.psarc"
@@ -125,6 +142,54 @@ class TestConfig(unittest.TestCase):
                                  games.BY_SLUG["saloon"].defaults())
             finally:
                 config.config_file = real
+
+
+class TestGameRunning(unittest.TestCase):
+    """Apply and restore must refuse, in plain words, while the game runs."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.game = games.BY_SLUG["saloon"]
+        self.dir = Path(self.td.name)
+        gc = paths.guitarcade(self.dir)
+        gc.mkdir()
+        patcher.live_path(self.game, self.dir).write_bytes(b"patched")
+        patcher.backup_path(self.game, self.dir).write_bytes(b"stock")
+        self.real_running = patcher.game_running
+
+    def tearDown(self):
+        patcher.game_running = self.real_running
+        self.td.cleanup()
+
+    def test_restore_refuses_while_running(self):
+        patcher.game_running = lambda: True
+        with self.assertRaisesRegex(patcher.PatchError, "Close it"):
+            patcher.restore(self.game, self.dir)
+        self.assertEqual(
+            patcher.live_path(self.game, self.dir).read_bytes(), b"patched")
+
+    def test_apply_refuses_while_running(self):
+        patcher.game_running = lambda: True
+        if sevenzip.find() is None:
+            self.skipTest("7-Zip not installed")
+        with self.assertRaisesRegex(patcher.PatchError, "Close it"):
+            patcher.apply(self.game, {}, self.dir)
+
+    def test_locked_file_on_restore_is_explained(self):
+        patcher.game_running = lambda: False
+        real = patcher.shutil.copy2
+
+        def locked(*a, **k):
+            raise PermissionError(5, "Access is denied")
+        try:
+            patcher.shutil.copy2 = locked
+            with self.assertRaisesRegex(patcher.PatchError, "Close it"):
+                patcher.restore(self.game, self.dir)
+        finally:
+            patcher.shutil.copy2 = real
+
+    def test_detection_runs(self):
+        self.assertIsInstance(self.real_running(), bool)
 
 
 GAME_DIR = paths.find_game(None)
