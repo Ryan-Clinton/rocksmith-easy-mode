@@ -1,47 +1,65 @@
 # Rocksmith Easy Mode
 
-Rocksmith 2014's Guitarcade minigames are tuned for adults who can already
-play. If you hand the guitar to a beginner — in my case an eight-year-old —
-the ducks fly off before he can find the fret, the wall of doom ends the run
-in seconds, and String Skip Saloon fires targets faster than he can move
-between strings.
+[![tests](https://github.com/Ryan-Clinton/rocksmith-easy-mode/actions/workflows/tests.yml/badge.svg)](https://github.com/Ryan-Clinton/rocksmith-easy-mode/actions/workflows/tests.yml)
 
-This is a small cross-platform app that slows those games down to whatever
-pace suits the player, and sets the Real Tone cable's input level properly
-for guitar or bass.
+**Slow Rocksmith 2014's Guitarcade down to a pace a real beginner can play.**
+Difficulty sliders for Ducks ReDucks and String Skip Saloon, with defaults
+that came out of playtesting with an actual eight-year-old.
 
-Nothing is permanent: the original archives are backed up before the first
-change, and one button puts the stock game back.
+Ducks ReDucks and String Skip Saloon are two of the Guitarcade games most
+often recommended to new players: Ducks for finding frets, Saloon for
+finding strings. But they speed up faster than an absolute beginner can keep
+up. When I handed the guitar to an eight-year-old, the ducks flew off before
+he could find the fret, the wall of doom ended the run in seconds, and Saloon
+fired targets faster than he could move between strings. This app slows both
+games down to whatever pace suits the player.
+
+**[Download for Windows](https://github.com/Ryan-Clinton/rocksmith-easy-mode/releases/latest)**
+— extract the zip and run `RocksmithEasyMode.exe`. You also need
+[7-Zip](https://7-zip.org). Linux and running from source are covered under
+[Install](#install).
 
 ![Ducks ReDucks tab](docs/screenshot-ducks.png)
 
 ## What it does
 
-**Guitarcade sliders.** Every value worth changing is exposed with a plain
-English explanation of what the number means. Move a slider, press *Apply to
-the game*, restart Rocksmith.
+**String Skip Saloon.** Gap between targets and target travel speed.
 
-*String Skip Saloon* — gap between targets, target travel speed.
+**Ducks ReDucks.** Gap between ducks, duck speed, wall-of-doom speed (a
+separate slider, because the wall is what ends the run and needs slowing much
+harder), difficulty build-up, rainbow duck speed, kills per rainbow duck,
+rainbow duck bounces, and the fret range ducks may spawn on.
 
-*Ducks ReDucks* — gap between ducks, duck speed, wall-of-doom speed (separate,
-because the wall is what ends the run and needs slowing much harder),
-difficulty build-up, rainbow duck speed, kills per rainbow duck, rainbow duck
-bounces, and the fret range ducks may spawn on.
+Every slider comes with a plain-English explanation of what its number means.
+Move a slider, press *Apply to the game*, and restart Rocksmith.
 
-**Real Tone cable level.** The cable's gain control spans −8 dB to +10 dB,
-which means **unity is about 44%, not 50%** — anything above that is boost.
-That single fact is why an active-pickup bass gets told it is too loud during
-calibration. The app shows every value in dB as well as percent, with presets
-for guitar and bass, straight in or through an amp's effects loop.
+**Safe to undo.** The original archive is backed up before the first change,
+and one button puts the stock game back. Each rebuilt archive is read back
+and checked before it replaces the game's file. If anything in the archive
+isn't what the app expects, it refuses to patch rather than write half a
+change.
+
+**No game files are distributed.** The app only changes the files in your own
+Rocksmith install, on your own machine.
+
+**Also included: a Real Tone cable level helper.** The cable's gain control
+spans −8 dB to +10 dB, so **unity is about 44%, not 50%**. Anything above
+that is boost, which is why an active-pickup bass gets told it is too loud
+during calibration. The app shows every level in dB as well as percent, with
+starting-point presets for guitar and bass.
 
 ![Cable level tab](docs/screenshot-cable.png)
 
 ## Install
 
-You need **Python 3.8+**, **7-Zip**, and Tkinter.
+**Windows, ready to run.** [Download the latest
+release](https://github.com/Ryan-Clinton/rocksmith-easy-mode/releases/latest),
+extract it anywhere, and run `RocksmithEasyMode.exe`. Install
+[7-Zip](https://7-zip.org) too, which the app uses to repack the game's
+archives.
 
-**Windows** — install [Python](https://python.org) (tick *Add Python to PATH*)
-and [7-Zip](https://7-zip.org). Tkinter comes with Python. Then:
+**Windows, from source.** You need **Python 3.8+** and **7-Zip**. Install
+[Python](https://python.org), ticking *Add Python to PATH*, then:
 
 ```
 pip install cryptography
@@ -121,6 +139,9 @@ looking at the archive it thinks it is.
 
 ## Cable levels
 
+These presets are starting points, not universal answers: pickup output
+varies a lot from instrument to instrument.
+
 | | Level | Gain | |
 |---|---|---|---|
 | Guitar, straight in | 100% | +10.0 dB | passive pickups want the boost |
@@ -137,6 +158,31 @@ you. It will also ask `alsactl` to store the level, because the cable
 otherwise returns to +10 dB on every replug. On Windows nothing in the Python
 standard library can move a capture level, so the app shows the number and
 where to type it instead.
+
+## Compatibility
+
+Tested with the current Steam release of Rocksmith 2014 (Steam build
+16576867) running under Proton on Linux. The Windows app is built and tested
+automatically, but hasn't yet been tried against the game on Windows.
+
+## Caveats
+
+- Only the two minigames above are covered so far.
+- The patch checks it is looking at the exact archive it was written for. On
+  a Rocksmith build with different Guitarcade files it stops with an error
+  and changes nothing. Please open an issue if that happens to you.
+- Automatic cable-level setting is Linux/ALSA only; Windows and macOS get the
+  number and instructions.
+- The two effects-loop presets are untested starting guesses.
+- This touches game files. That is what it is for, but Steam's *Verify
+  integrity of game files* will replace them — just re-apply afterwards.
+
+Not affiliated with Ubisoft. Rocksmith is their trademark.
+
+---
+
+*The rest is for the curious: how the patching works and how to run the
+tests.*
 
 ## How the patching works
 
@@ -172,17 +218,6 @@ The psarc, knob, cable-maths and config tests need nothing installed. If a
 Rocksmith install and 7-Zip are present, two more tests patch the real game,
 read the values back out of the archive, and restore whatever state they
 found.
-
-## Caveats
-
-- Only the two minigames above are covered so far.
-- Automatic cable-level setting is Linux/ALSA only; Windows and macOS get the
-  number and instructions.
-- The two effects-loop presets are untested starting guesses.
-- This touches game files. That is what it is for, but Steam's *Verify
-  integrity of game files* will replace them — just re-apply afterwards.
-
-Not affiliated with Ubisoft. Rocksmith is their trademark.
 
 ## Licence
 

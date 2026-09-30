@@ -1,0 +1,45 @@
+name: release
+
+# Push a tag like v1.0.0 to build the Windows app and attach it to a *draft*
+# release. Review the draft on GitHub, then publish it by hand.
+# Running it by hand (Actions > release > Run workflow) builds the same zip as
+# a downloadable artifact instead, for testing before a release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m unittest discover -s tests -v
+      # --onedir rather than --onefile: onefile builds unpack to a temp folder
+      # on every launch and trip antivirus heuristics far more often.
+      - run: pyinstaller --noconfirm --windowed --onedir --name RocksmithEasyMode rocksmith-easy.pyw
+      - shell: pwsh
+        run: |
+          Copy-Item README.md, LICENSE dist/RocksmithEasyMode/
+          Compress-Archive dist/RocksmithEasyMode "RocksmithEasyMode-${{ github.ref_name }}-windows-x64.zip"
+      - if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: RocksmithEasyMode-windows-x64
+          path: RocksmithEasyMode-*-windows-x64.zip
+      - if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}" --draft --verify-tag
+          --title "Rocksmith Easy Mode ${{ github.ref_name }}"
+          --notes "See CHANGELOG.md. Windows: extract the zip and run RocksmithEasyMode.exe (7-Zip must be installed)."
+          "RocksmithEasyMode-${{ github.ref_name }}-windows-x64.zip"

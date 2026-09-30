@@ -1,0 +1,23 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-22.04 rather than -latest: it still has Python 3.8.
+        os: [ubuntu-22.04, windows-latest]
+        python: ["3.8", "3.10", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -r requirements.txt
+      # The live-patch tests skip themselves: there is no Rocksmith install here.
+      - run: python -m unittest discover -s tests -v

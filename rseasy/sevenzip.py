@@ -45,9 +45,17 @@ def require():
     return p
 
 
+# A windowed Windows build has no console: without these, every 7z call
+# flashes a console window, and an unset stdin can fail with "handle is
+# invalid".
+_QUIET = {"stdin": subprocess.DEVNULL}
+if sys.platform == "win32":
+    _QUIET["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+
 def _run(args, cwd=None):
     return subprocess.run(args, check=True, stdout=subprocess.DEVNULL,
-                          stderr=subprocess.PIPE, cwd=cwd)
+                          stderr=subprocess.PIPE, cwd=cwd, **_QUIET)
 
 
 def unpack(archive, dest):
@@ -67,7 +75,7 @@ def pack(dest, workdir, members):
     _run([require(), "a", "-t7z", "-m0=LZMA", "-mx=9", "-md=96k", "-ms=off",
           str(dest), "@%s" % listfile], cwd=str(workdir))
     listing = subprocess.run([require(), "l", str(dest)], capture_output=True,
-                             text=True, check=True).stdout
+                             text=True, check=True, **_QUIET).stdout
     dirs = [ln for ln in listing.splitlines() if " D...." in ln]
     if dirs:
         raise RuntimeError(
