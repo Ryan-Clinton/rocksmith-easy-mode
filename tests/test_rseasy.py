@@ -62,6 +62,32 @@ class TestPsarc(unittest.TestCase):
                 psarc.read(p)
 
 
+class TestLeaderboardBlock(unittest.TestCase):
+    """A patched game must never submit a score to the online leaderboards."""
+
+    def flow(self, td, body):
+        fp = Path(td) / games.Game.FLOW
+        fp.parent.mkdir(parents=True)
+        fp.write_bytes(body)
+        return fp
+
+    def test_score_report_is_removed(self):
+        call = b"\t\t\t\tAlphaGame.ReportGameScore(g_FinalScore, leaderboardID)\r\n"
+        with tempfile.TemporaryDirectory() as td:
+            fp = self.flow(td, b"local a = 1\r\n" + call + b"local b = 2\r\n")
+            games.BY_SLUG["ducks"].block_leaderboard(Path(td))
+            out = fp.read_bytes()
+        self.assertNotIn(b"ReportGameScore", out)
+        self.assertIn(games.Game.NOT_REPORTED, out)
+        self.assertEqual(out.count(b"\r\n"), 3)     # line count unchanged
+
+    def test_refuses_if_the_line_is_not_there(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.flow(td, b"-- some other build\r\n")
+            with self.assertRaises(RuntimeError):
+                games.BY_SLUG["saloon"].block_leaderboard(Path(td))
+
+
 class TestKnobs(unittest.TestCase):
     def test_clamped_to_range(self):
         k = games.BY_SLUG["ducks"].knob("max_fret")
@@ -342,9 +368,11 @@ class TestLivePatch(unittest.TestCase):
             sevenzip.unpack(td / "i.7z", td / "w")
             xb = (td / "w" / g.xblock).read_text(errors="replace")
             lua = (td / "w" / g.pool).read_text(errors="replace")
+            flow = (td / "w" / g.FLOW).read_text(errors="replace")
         # speed 2 halves the stock 125, 1000
         self.assertIn("62.5, 500", xb)
         self.assertIn("0.5) * 4", lua)
+        self.assertNotIn("ReportGameScore", flow)
 
     def test_restore_gives_back_the_stock_bytes(self):
         g = games.BY_SLUG["saloon"]

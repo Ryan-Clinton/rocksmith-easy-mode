@@ -39,6 +39,11 @@ and checked before it replaces the game's file. If anything in the archive
 isn't what the app expects, it refuses to patch rather than write half a
 change.
 
+**Patched games stay off the leaderboards.** A slowed-down game is not the
+game the Guitarcade leaderboards are for, so every patch removes the one
+line that submits the final score. Your own high scores are still saved on
+your PC. Restoring the stock game puts the line back.
+
 **No game files are distributed.** The app only changes the files in your own
 Rocksmith install, on your own machine.
 

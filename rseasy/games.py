@@ -90,6 +90,23 @@ class Game:
         """Edit the unpacked archive in *work*. Return summary lines."""
         raise NotImplementedError
 
+    # Every Guitarcade game reports its final score from this one line in the
+    # shared game flow. A patched game is not the game the leaderboards are
+    # for, so the patcher always takes the line out.
+    FLOW = "behaviors/guitarcade/esegcgameflow.lua"
+    REPORT_SCORE = b"AlphaGame.ReportGameScore(g_FinalScore, leaderboardID)"
+    NOT_REPORTED = b"-- rocksmith-easy: modded game, score not reported"
+
+    def block_leaderboard(self, work):
+        """Stop the patched game submitting scores. Returns a summary line."""
+        fp = work / self.FLOW
+        lua = fp.read_bytes()
+        if lua.count(self.REPORT_SCORE) != 1:
+            raise RuntimeError(
+                "score-report line not found exactly once in %s" % self.FLOW)
+        fp.write_bytes(lua.replace(self.REPORT_SCORE, self.NOT_REPORTED))
+        return "leaderboards          off - scores stay on this PC"
+
     # -- helpers shared by the concrete games -------------------------------
 
     @staticmethod

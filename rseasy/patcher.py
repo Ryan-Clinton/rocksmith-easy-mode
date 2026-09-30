@@ -111,6 +111,7 @@ def apply(game, values, game_dir, log=None):
 
         log("Editing game data")
         summary = game.apply(work, values)
+        summary.append(game.block_leaderboard(work))
 
         members = sevenzip.members_of(work)
         if len(members) != game.members:

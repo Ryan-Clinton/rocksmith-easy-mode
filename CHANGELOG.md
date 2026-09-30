@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Patched games never submit scores to the online leaderboards: the
+  single score-report call is removed from every patched game. Local high
+  scores still work.
 - Windows build: a ready-to-run `RocksmithEasyMode.exe`, built by GitHub
   Actions and attached to each release.
 - Apply and Restore now say "close Rocksmith first" when the game is
