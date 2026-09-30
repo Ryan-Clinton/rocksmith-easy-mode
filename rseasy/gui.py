@@ -103,10 +103,14 @@ class KnobRow:
         controls.grid(row=0, column=2, sticky="e")
         ttk.Button(controls, text="◀", width=2,
                    command=lambda: self.nudge(-1)).pack(side="left")
+        ttk.Label(controls, text=knob.ends[0], foreground=GREY
+                  ).pack(side="left", padx=(6, 0))
         self.scale = ttk.Scale(controls, from_=knob.lo, to=knob.hi,
-                               orient="horizontal", length=260,
+                               orient="horizontal", length=220,
                                variable=self.var, command=self._moved)
         self.scale.pack(side="left", padx=4)
+        ttk.Label(controls, text=knob.ends[1], foreground=GREY
+                  ).pack(side="left", padx=(0, 6))
         ttk.Button(controls, text="▶", width=2,
                    command=lambda: self.nudge(1)).pack(side="left")
         self.value = ttk.Label(controls, width=6, anchor="e")

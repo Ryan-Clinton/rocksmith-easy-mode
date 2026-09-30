@@ -32,6 +32,8 @@ class Knob:
     step: float = 0.5
     integer: bool = False
     explain: Optional[Callable[[float], str]] = None
+    # Words for the slider's left and right ends.
+    ends: tuple = ("faster", "slower")
 
     def coerce(self, v):
         """Clamp to range and snap to the step, so a dragged slider reads
@@ -230,21 +232,25 @@ class Ducks(Game):
              "How many ducks must be shot to earn a rainbow duck.",
              stock=3, default=1, lo=1, hi=8, step=1, integer=True,
              explain=lambda v: ("one after every kill" if v == 1 else
-                                "one every %d kills (stock 3)" % v)),
+                                "one every %d kills (stock 3)" % v),
+             ends=("more often", "less often")),
         Knob("rainbow_bounces", "Rainbow duck bounces",
              "How many times a rainbow duck bounces before it vanishes. "
              "Fewer bounces means the next one is allowed sooner.",
              stock=2, default=1, lo=1, hi=6, step=1, integer=True,
-             explain=lambda v: "%d bounce%s (stock 2)" % (v, "" if v == 1 else "s")),
+             explain=lambda v: "%d bounce%s (stock 2)" % (v, "" if v == 1 else "s"),
+             ends=("fewer", "more")),
         Knob("min_fret", "Lowest fret",
              "The lowest fret a duck can appear on.",
              stock=1, default=1, lo=1, hi=20, step=1, integer=True,
-             explain=lambda v: "fret %d" % v),
+             explain=lambda v: "fret %d" % v,
+             ends=("low", "high")),
         Knob("max_fret", "Highest fret",
              "The highest fret a duck can appear on. Stock climbs to 20 as "
              "the game gets harder, which means reaching right up the neck.",
              stock=20, default=12, lo=1, hi=22, step=1, integer=True,
-             explain=lambda v: "fret %d (stock tops out at 20)" % v),
+             explain=lambda v: "fret %d (stock tops out at 20)" % v,
+             ends=("low", "high")),
     ]
 
     def validate(self, v):

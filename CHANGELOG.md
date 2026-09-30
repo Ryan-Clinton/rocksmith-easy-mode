@@ -9,6 +9,8 @@
   swap no longer leaves a `.psarc.new` file behind.
 - Sliders snap to their steps, so values read 1.5 rather than 1.3294572,
   and the Saloon target gap reads "5x the stock gap between targets".
+- Each slider says which way is which: faster / slower, fewer / more,
+  low / high.
 - 7-Zip no longer flashes a console window when run from the Windows app.
 - Tests run on every push, on Windows and Linux, Python 3.8 to 3.13.
 
