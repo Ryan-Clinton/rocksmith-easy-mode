@@ -9,8 +9,9 @@ complain that it is too loud.
 On Linux the cable is deliberately hidden from PipeWire (wine needs it as raw
 ALSA), so `amixer` is the only place the level can be changed short of the
 instrument's volume knob. Windows exposes the same control as the recording
-device's Level slider, which no stdlib call can move - there the app reports
-the number to dial in by hand.
+device's Level slider; there the app sets it through the Core Audio API
+(see wincoreaudio.py), in dB, since Windows' own percentage is a different
+scale.
 """
 import re
 import shutil
@@ -166,26 +167,80 @@ class AlsaBackend(Backend):
 
 
 class ManualBackend(Backend):
-    """Windows and macOS: report the number, let the user set it."""
+    """macOS, or Windows when its audio API can't be reached: report the
+    number and let the user set it."""
     name = "manual"
     can_set = False
 
     def why(self):
         if sys.platform == "win32":
-            return (
-                "Windows does not let this app move the cable's input level.\n"
-                "It is the same control, shown as a slider:\n\n"
-                "  Settings > System > Sound > More sound settings\n"
-                "  > Recording > Rocksmith USB Guitar Adapter > Properties\n"
-                "  > Levels > set the slider to the percentage shown above.\n\n"
-                "The percentage maps straight across, so a preset of 32% here "
-                "means 32 on that slider.")
+            return WINDOWS_BY_HAND
         return ("Setting the level automatically is only implemented for "
-                "ALSA on Linux. Use your system's recording-level control and "
-                "dial in the percentage shown above.")
+                "Linux and Windows. Use your system's recording-level control "
+                "and dial in the dB value shown above.")
+
+
+WINDOWS_BY_HAND = (
+    "To set it by hand instead: Settings > System > Sound > More sound "
+    "settings > Recording > Rocksmith USB Guitar Adapter > Properties > "
+    "Levels, then right-click the slider to switch it to dB and dial in the "
+    "dB value shown above. Windows' own percentage is not the same scale.")
+
+
+class WindowsBackend(Backend):
+    """Sets the cable's capture gain through the Windows Core Audio API.
+
+    This is the same control as the Levels slider in the recording device's
+    properties, reached through IAudioEndpointVolume with plain ctypes COM
+    calls, so there is still nothing to install. The level is set in dB,
+    because Windows' own slider percentage is not linear in dB and does not
+    match the 38 hardware steps. Windows remembers the level per device, so
+    there is nothing to persist.
+    """
+    name = "windows"
+    can_set = True
+
+    def _endpoint(self):
+        from . import wincoreaudio
+        return wincoreaudio.find_capture_volume("rocksmith")
+
+    def cable_present(self):
+        try:
+            with self._endpoint() as vol:
+                return vol is not None
+        except OSError:
+            return False
+
+    def get_percent(self):
+        try:
+            with self._endpoint() as vol:
+                if vol is None:
+                    return None
+                db = vol.get_db()
+        except OSError:
+            return None
+        step = round((db - DB_MIN) / (DB_MAX - DB_MIN) * STEPS)
+        return int(round(max(0, min(STEPS, step)) / STEPS * 100))
+
+    def set_percent(self, pct):
+        try:
+            with self._endpoint() as vol:
+                if vol is None:
+                    raise NotAvailable("The Realtone cable is not plugged in.")
+                lo, hi = vol.get_range()
+                vol.set_db(max(lo, min(hi, pct_to_db(pct))))
+        except OSError as e:
+            raise NotAvailable("Windows would not change the level (%s).\n\n%s"
+                               % (e, WINDOWS_BY_HAND))
+        return self.get_percent()
+
+    def why(self):
+        return "The Realtone cable is not plugged in."
 
 
 def backend():
     if sys.platform.startswith("linux") and shutil.which("amixer"):
         return AlsaBackend()
+    if sys.platform == "win32":
+        return WindowsBackend()
     return ManualBackend()

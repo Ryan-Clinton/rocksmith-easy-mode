@@ -155,9 +155,10 @@ what makes calibration complain.
 On Linux the cable is deliberately hidden from PipeWire (Wine needs it as raw
 ALSA), so `amixer` is the only way to change this, and the app does it for
 you. It will also ask `alsactl` to store the level, because the cable
-otherwise returns to +10 dB on every replug. On Windows nothing in the Python
-standard library can move a capture level, so the app shows the number and
-where to type it instead.
+otherwise returns to +10 dB on every replug. On Windows the app sets the
+same control through Windows' own audio API, in dB. That matters because the
+percentage on Windows' *Levels* slider is a different scale from the one
+here: 32% in this app is −2.2 dB, which is not 32 on that slider.
 
 ## Compatibility
 
@@ -171,7 +172,7 @@ automatically, but hasn't yet been tried against the game on Windows.
 - The patch checks it is looking at the exact archive it was written for. On
   a Rocksmith build with different Guitarcade files it stops with an error
   and changes nothing. Please open an issue if that happens to you.
-- Automatic cable-level setting is Linux/ALSA only; Windows and macOS get the
+- Automatic cable-level setting works on Linux and Windows; macOS gets the
   number and instructions.
 - The two effects-loop presets are untested starting guesses.
 - This touches game files. That is what it is for, but Steam's *Verify

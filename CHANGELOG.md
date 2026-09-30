@@ -11,6 +11,8 @@
   and the Saloon target gap reads "5x the stock gap between targets".
 - Each slider says which way is which: faster / slower, fewer / more,
   low / high.
+- Windows: the cable level is now set automatically, in dB, through the
+  Windows Core Audio API, instead of asking you to set it by hand.
 - 7-Zip no longer flashes a console window when run from the Windows app.
 - Tests run on every push, on Windows and Linux, Python 3.8 to 3.13.
 

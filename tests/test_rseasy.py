@@ -132,6 +132,24 @@ class TestAudio(unittest.TestCase):
             self.assertTrue(0 <= audio.pct_to_step(pct) <= audio.STEPS)
 
 
+@unittest.skipUnless(sys.platform == "win32", "Windows Core Audio only")
+class TestWindowsAudio(unittest.TestCase):
+    """Walks the real COM interfaces; a wrong vtable slot would crash here."""
+
+    def test_capture_devices_can_be_listed(self):
+        from rseasy import wincoreaudio
+        try:
+            names = wincoreaudio.capture_names()
+        except OSError as e:          # CI runners may have no audio service
+            self.skipTest("Core Audio unavailable: %s" % e)
+        self.assertIsInstance(names, list)
+
+    def test_backend_is_windows_and_answers(self):
+        b = audio.backend()
+        self.assertEqual(b.name, "windows")
+        self.assertIsInstance(b.cable_present(), bool)
+
+
 class TestConfig(unittest.TestCase):
     def test_legacy_conf_is_migrated(self):
         with tempfile.TemporaryDirectory() as td:
