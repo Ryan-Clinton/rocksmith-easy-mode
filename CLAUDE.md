@@ -34,6 +34,7 @@ Everything lives in the `rseasy/` package. The data flow for a patch:
 - **Windows locks the game's archives while Rocksmith runs**, so `apply`/`restore` refuse up front if `patcher.game_running()` (tasklist on Windows, `/proc` cmdline scan for Proton on Linux), and turn a `PermissionError` on the final swap into the same "close Rocksmith first" `PatchError`.
 - **The inner 7z must contain no directory entries** (they hang the game's loading screen) — `sevenzip.pack` takes an explicit member list; never add `.`.
 - **`audio.py`**: cable gain spans −8 to +10 dB over 38 steps (amixer 0..37), so unity ≈ 44%, not 50%. `AlsaBackend` drives `amixer`/`alsactl` on Linux; `ManualBackend` just reports the number elsewhere. Presets live in `audio.PRESETS`.
+- **Windows cable level**: `wincoreaudio.py` is ctypes COM (IMMDeviceEnumerator → IAudioEndpointVolume, in dB). Rocksmith resets the level to 17% (−4.5 dB) at every launch, so `audio.LevelHolder` re-applies it each second while the app is open (same approach as RSMods' in-game override, without a DLL).
 - **`config.py`**: JSON at `~/.config/rocksmith-easy/config.json` (APPDATA on Windows), with one-time migration from the legacy `~/.config/rocksmith-input.conf`. `load()` must survive a corrupt file.
 - **`paths.py`**: Steam library discovery (registry on Windows; native, Flatpak, Snap on Linux; `libraryfolders.vdf`).
 - **`gui.py`**: long jobs run on a worker thread reporting through a queue; each panel must degrade gracefully when the game, 7-Zip, or cable is missing.

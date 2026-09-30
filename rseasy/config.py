@@ -56,6 +56,8 @@ def defaults():
         "guitarcade": {g.slug: g.defaults() for g in games.ALL},
         "input": presets,
         "persist_level": True,
+        # Windows: the level to hold while Rocksmith runs, or None.
+        "hold_level": None,
     }
 
 
@@ -71,6 +73,9 @@ def load():
         cfg["game_dir"] = raw["game_dir"]
     if isinstance(raw.get("persist_level"), bool):
         cfg["persist_level"] = raw["persist_level"]
+    hl = raw.get("hold_level")
+    if isinstance(hl, (int, float)) and not isinstance(hl, bool) and 0 <= hl <= 100:
+        cfg["hold_level"] = int(round(hl))
     for g in games.ALL:
         saved = (raw.get("guitarcade") or {}).get(g.slug)
         if isinstance(saved, dict):

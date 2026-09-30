@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 from dataclasses import dataclass
 
 CARD_NAME = "Rocksmith USB Guitar Adapter"
@@ -89,6 +90,7 @@ class Backend:
     """Abstract input-level backend."""
     name = "none"
     can_set = False
+    can_hold = False            # see LevelHolder
 
     def cable_present(self):
         return False
@@ -199,6 +201,7 @@ class WindowsBackend(Backend):
     """
     name = "windows"
     can_set = True
+    can_hold = True
 
     def _endpoint(self):
         from . import wincoreaudio
@@ -234,8 +237,63 @@ class WindowsBackend(Backend):
                                % (e, WINDOWS_BY_HAND))
         return self.get_percent()
 
+    def enforce(self, db):
+        """Put the cable back at *db* if something moved it. True if it did."""
+        try:
+            with self._endpoint() as vol:
+                if vol is None or abs(vol.get_db() - db) <= HOLD_TOLERANCE_DB:
+                    return False
+                lo, hi = vol.get_range()
+                vol.set_db(max(lo, min(hi, db)))
+                return True
+        except OSError:
+            return False
+
     def why(self):
         return "The Realtone cable is not plugged in."
+
+
+# The hardware moves in ~0.49 dB steps, so a level read back can sit up to
+# half a step from the one asked for without anything having changed it.
+HOLD_TOLERANCE_DB = 0.3
+
+
+class LevelHolder:
+    """Keep the cable at one level while Rocksmith runs.
+
+    On Windows Rocksmith sets the cable to 17% (-4.5 dB) every time it
+    starts, overwriting whatever was set beforehand. RSMods' "Override input
+    volume" answers that from inside the game by checking the level every
+    tick and putting it back when it differs. This is the same check-and-set,
+    run from a background thread here instead, so it needs no DLL in the game
+    folder - only this app left open while playing.
+    """
+    INTERVAL = 1.0
+
+    def __init__(self, backend):
+        self.backend = backend
+        self.pct = None
+        self.resets = 0
+        self._stop = threading.Event()
+        self._thread = None
+
+    def hold(self, pct):
+        self.pct = pct
+        if self._thread is None:
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+
+    def release(self):
+        self.pct = None
+
+    def stop(self):
+        self._stop.set()
+
+    def _run(self):
+        while not self._stop.wait(self.INTERVAL):
+            pct = self.pct
+            if pct is not None and self.backend.enforce(pct_to_db(pct)):
+                self.resets += 1
 
 
 def backend():

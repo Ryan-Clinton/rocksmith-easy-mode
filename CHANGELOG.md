@@ -12,7 +12,10 @@
 - Each slider says which way is which: faster / slower, fewer / more,
   low / high.
 - Windows: the cable level is now set automatically, in dB, through the
-  Windows Core Audio API, instead of asking you to set it by hand.
+  Windows Core Audio API, instead of asking you to set it by hand. Rocksmith
+  resets it to 17% at every launch, so the app holds the level while it is
+  open, putting it back whenever it changes (`input --hold` on the command
+  line).
 - 7-Zip no longer flashes a console window when run from the Windows app.
 - Tests run on every push, on Windows and Linux, Python 3.8 to 3.13.
 

@@ -352,12 +352,58 @@ class CablePanel(ttk.Frame):
         self.custom_label.pack(side="left", padx=PAD)
         ttk.Button(inner, text="Set", command=self.set_custom).pack(side="right")
 
+        self.holder = None
+        if self.backend.can_hold:
+            self.holder = audio.LevelHolder(self.backend)
+            self.hold_var = tk.BooleanVar(
+                value=app.cfg.get("hold_level") is not None)
+            ttk.Checkbutton(
+                self, variable=self.hold_var, command=self.toggle_hold,
+                text="Keep this level while Rocksmith runs. The game resets "
+                     "the cable to 17% (-4.5 dB) every time it starts, so "
+                     "leave this window open while you play - minimised is "
+                     "fine.").pack(fill="x", padx=PAD, pady=(0, 4))
+            self.hold_label = ttk.Label(self, foreground=GREY)
+            self.hold_label.pack(fill="x", padx=PAD + 20)
+            if app.cfg.get("hold_level") is not None:
+                self.holder.hold(app.cfg["hold_level"])
+            self._show_hold()
+
         self.note = ttk.Label(self, wraplength=700, justify="left",
                               foreground=GREY)
         self.note.pack(fill="x", padx=PAD, pady=(0, PAD))
 
         self.show_custom()
         self.refresh()
+
+    def toggle_hold(self):
+        if self.hold_var.get():
+            pct = self.backend.get_percent()
+            if pct is None:
+                pct = int(round(self.custom.get()))
+            self._hold(pct)
+        else:
+            self.holder.release()
+            self.app.cfg["hold_level"] = None
+            config.save(self.app.cfg)
+
+    def _hold(self, pct):
+        self.holder.hold(pct)
+        self.app.cfg["hold_level"] = int(pct)
+        config.save(self.app.cfg)
+
+    def _show_hold(self):
+        h = self.holder
+        if h.pct is None:
+            text = ""
+        elif h.resets:
+            text = ("Holding at %s - put back %d time%s after something "
+                    "changed it." % (audio.describe(h.pct), h.resets,
+                                     "" if h.resets == 1 else "s"))
+        else:
+            text = "Holding at %s." % audio.describe(h.pct)
+        self.hold_label.configure(text=text)
+        self.after(1000, self._show_hold)
 
     def refresh(self):
         for p in audio.PRESETS:
@@ -398,6 +444,8 @@ class CablePanel(ttk.Frame):
             messagebox.showerror("Could not set the level", str(e), parent=self)
             self.refresh()
             return
+        if self.holder is not None and self.hold_var.get():
+            self._hold(pct)
         msg = self.backend.persist() if self.app.cfg.get("persist_level") else None
         self.refresh()
         self.note.configure(text="%s set to %s.  %s"

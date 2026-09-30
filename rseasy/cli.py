@@ -133,6 +133,24 @@ def cmd_input(args, cfg):
         if msg:
             print(msg)
 
+    if args.hold:
+        if not b.can_hold:
+            print("(--hold is only needed on Windows; the level already stays put here)")
+        else:
+            import time
+            holder = audio.LevelHolder(b)
+            holder.hold(pct)
+            print("Holding while Rocksmith runs - Ctrl+C to stop.")
+            seen = 0
+            try:
+                while True:
+                    time.sleep(1)
+                    if holder.resets != seen:
+                        seen = holder.resets
+                        print("  put back at %s" % time.strftime("%H:%M:%S"))
+            except KeyboardInterrupt:
+                holder.stop()
+
     if args.save_as:
         key = args.save_as.replace("-", "_")
         if key not in audio.BY_KEY:
@@ -198,6 +216,9 @@ def build_parser():
                      help="set a custom level, 0-100")
     inp.add_argument("--save-as", metavar="PRESET",
                      help="remember the level just set as this preset")
+    inp.add_argument("--hold", action="store_true",
+                     help="Windows: keep putting the level back while "
+                          "Rocksmith runs (it resets it at launch)")
     inp.add_argument("--list", action="store_true", help="show the presets")
     return ap
 

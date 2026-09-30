@@ -155,10 +155,18 @@ what makes calibration complain.
 On Linux the cable is deliberately hidden from PipeWire (Wine needs it as raw
 ALSA), so `amixer` is the only way to change this, and the app does it for
 you. It will also ask `alsactl` to store the level, because the cable
-otherwise returns to +10 dB on every replug. On Windows the app sets the
-same control through Windows' own audio API, in dB. That matters because the
-percentage on Windows' *Levels* slider is a different scale from the one
-here: 32% in this app is −2.2 dB, which is not 32 on that slider.
+otherwise returns to +10 dB on every replug.
+
+On Windows the app sets the same control through Windows' own audio API, in
+dB. Windows' *Levels* slider uses a different scale: 32% in this app is
+−2.2 dB, which is not 32 on that slider. **Rocksmith on Windows resets the
+cable to 17% (−4.5 dB) every time it starts**, overwriting whatever was set
+beforehand. So the app holds the level: leave it open while you play
+(minimised is fine), and it puts the level back within a second whenever
+something changes it. This is the same check-and-set that RSMods' *Override
+input volume* does, without needing RSMods installed. From the command line,
+`rocksmith-easy input bass-direct --hold` does the same until you press
+Ctrl+C.
 
 ## Compatibility
 
@@ -173,7 +181,8 @@ automatically, but hasn't yet been tried against the game on Windows.
   a Rocksmith build with different Guitarcade files it stops with an error
   and changes nothing. Please open an issue if that happens to you.
 - Automatic cable-level setting works on Linux and Windows; macOS gets the
-  number and instructions.
+  number and instructions. On Windows the app has to stay open while you
+  play, to undo the game's reset.
 - The two effects-loop presets are untested starting guesses.
 - This touches game files. That is what it is for, but Steam's *Verify
   integrity of game files* will replace them — just re-apply afterwards.

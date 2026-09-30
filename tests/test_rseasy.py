@@ -132,6 +132,64 @@ class TestAudio(unittest.TestCase):
             self.assertTrue(0 <= audio.pct_to_step(pct) <= audio.STEPS)
 
 
+class TestLevelHolder(unittest.TestCase):
+    """Rocksmith on Windows resets the cable at launch; the holder must put
+    it back, and must leave it alone when it is already right."""
+
+    class FakeCable(audio.Backend):
+        can_set = can_hold = True
+
+        def __init__(self):
+            self.db = 0.0
+            self.writes = 0
+
+        def enforce(self, db):
+            if abs(self.db - db) <= audio.HOLD_TOLERANCE_DB:
+                return False
+            self.db = db
+            self.writes += 1
+            return True
+
+    def run_holder(self, cable, pct, meddle=None):
+        import time
+        h = audio.LevelHolder(cable)
+        h.INTERVAL = 0.01
+        h.hold(pct)
+        time.sleep(0.2)
+        if meddle:
+            meddle()
+            time.sleep(0.2)
+        h.stop()
+        return h
+
+    def test_reset_is_put_back(self):
+        cable = self.FakeCable()
+        target = audio.pct_to_db(10)
+
+        def game_resets_it():
+            cable.db = -4.53               # Rocksmith's 17% on launch
+        h = self.run_holder(cable, 10, game_resets_it)
+        self.assertAlmostEqual(cable.db, target)
+        self.assertEqual(h.resets, 2)      # the first set, then the reset
+
+    def test_quantisation_is_not_a_change(self):
+        cable = self.FakeCable()
+        cable.db = audio.pct_to_db(32) + 0.2
+        self.run_holder(cable, 32)
+        self.assertEqual(cable.writes, 0)
+
+    def test_released_holder_stops_writing(self):
+        cable = self.FakeCable()
+        h = audio.LevelHolder(cable)
+        h.INTERVAL = 0.01
+        h.hold(10)
+        h.release()
+        import time
+        time.sleep(0.2)
+        h.stop()
+        self.assertEqual(cable.writes, 0)
+
+
 @unittest.skipUnless(sys.platform == "win32", "Windows Core Audio only")
 class TestWindowsAudio(unittest.TestCase):
     """Walks the real COM interfaces; a wrong vtable slot would crash here."""
